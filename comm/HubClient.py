@@ -16,7 +16,7 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-config_file = os.path.join(appdirs.user_config_dir('lego-hub-tk'), 'lego_hub.yaml')
+config_file = 'lego_hub.yaml'
 if os.path.exists(config_file):
     logger.info('Loading configuration from %s', config_file)
     config = cfg_load.load(config_file)
