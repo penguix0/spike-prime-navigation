@@ -24,8 +24,6 @@ logger = logging.getLogger("App")
 log_filename = os.path.dirname(__file__) + "/logs/hubstatus.log"
 setup_logging(log_filename)
 
-
-
 class MainWindow(QMainWindow):
     def __init__(self, hub_client, hub_monitor, *args, **kwargs):
         super().__init__(*args, **kwargs)
