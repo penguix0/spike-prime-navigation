@@ -6,3 +6,9 @@ class Camera():
 
     def smoothZoom(self, originalZoom:float, newZoom:float, speed:int):
         pass
+
+    def position(self):
+        return (self.x, self.y)
+
+    def update(self):
+        pass
