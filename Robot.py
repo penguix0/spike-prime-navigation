@@ -1,6 +1,9 @@
 #! /usr/bin/python3
 
+from tokenize import String
 import yaml
+
+from comm.HubClient import ConnectionState
 with open("path.yaml") as file:
 	try: 
 		global pathConfig
@@ -16,20 +19,6 @@ import os, sys
 from settings import *
 import pygame as pg
 
-# class Line(pg.sprite.Sprite):
-# 	def __init__(self, app, origin=tuple, endpoint=tuple, color=tuple, thickness=float):
-# 		# Call the parent class (Sprite) constructor
-# 		self.groups = app.all_sprites
-# 		pg.sprite.Sprite.__init__(self, self.groups)
-# 		self.app = app
-# 		self.origin = origin
-# 		self.endpoint = endpoint
-# 		self.color = color
-# 		self.thickness = thickness
-	
-# 	def update(self):
-# 		pg.draw.line(self.app.screen, self.color, self.origin, self.endpoint, self.thickness)
-
 class Robot(pg.sprite.Sprite):
 	def __init__(self, app, color, width, height):
 		# Call the parent class (Sprite) constructor
@@ -43,14 +32,16 @@ class Robot(pg.sprite.Sprite):
 		self.original_image.fill(color)
 		self.image = self.original_image
 		self.rect = self.original_image.get_rect()
-		self.x = DISPLAY_SIZE[0] / 2 - width / 2
-		self.y = DISPLAY_SIZE[1] / 2 - height / 2
+		
+		self.x = 0
+		self.y = 0
 
-		self.rect.x = self.x
-		self.rect.y = self.y
+		self.camera = self.app.camera
 
 		self.speed = ROBOT_SPEED
+		
 		self.rotation = 0
+		## For smoothing the rotation on the screen
 		self.last_rotations = []
 		self.max_last_rotations = 4
 
@@ -67,6 +58,10 @@ class Robot(pg.sprite.Sprite):
 		
 		self.ports = [self.port_a, self.port_b, self.port_c, self.port_d, self.port_e, self.port_f]
 
+		## Points scanned by the ultra sonic sensor
+		self.dummy_scan = {"robot_position": (0,0), "angle": 0, "length": 0}
+		self.scanned_points = [self.dummy_scan]
+		self.max_scanned_points = 1000
 		self.setup_robot()
 
 	def setup_logger(self):
@@ -98,48 +93,45 @@ class Robot(pg.sprite.Sprite):
 		return max(min(num, max_value), min_value)
 
 	def move(self):
-		# self.x = -self.get_accelerometer()[0] * 0.1
-		# self.x = self.clamp(self.x, 0, DISPLAY_SIZE[0] - self.width - 10)
-		# self.rect.x = self.x
-		
-		# self.y += self.get_accelerometer()[1] * 0.1
-		# ## - 10 for some spacing with the wall
-		# self.y = self.clamp(self.y, 0, DISPLAY_SIZE[1] - self.height - 10)
-		# self.rect.y = self.y
+		self.rect.centerx = self.x + self.camera.position()[0]
+		self.rect.centery = self.y + self.camera.position()[1]
+	
+	def scale(self):
 		pass
 
-	"""rotate an image while keeping its center"""
+	"""rotate an image while keeping its center and smooth the rotation"""
 	def rotate(self):
 		self.rotation = (-self.get_orientation()[0])
 		self.last_rotations.append(self.rotation)
 		## If the list is becoming too long delete the oldest value
 		if len(self.last_rotations) > self.max_last_rotations:
 			self.last_rotations.pop(0)
-		list_average = sum(self.last_rotations)/len(self.last_rotations)
+		list_average = sum(self.last_rotations) / len(self.last_rotations)
 
-		self.image = pg.transform.rotate(self.original_image, list_average)
+		self.image = pg.transform.rotozoom(self.original_image, list_average, 1)
 		self.rect = self.image.get_rect(center = self.rect.center)
 
 	def update(self):
-		self.move()
+		self.scale()
 		self.rotate()
-		self.update_ports()
-		self.draw_distance()
-
-		for port in self.ports:
-			if port["name"] == "Distance Sensor":
-				print (port)
+		self.move()
+		## Prevent the program from requesting things from the hub while it's not connected.
+		if self.client.state == ConnectionState.TELEMETRY:
+			self.update_ports()
+			self.scan_points()
 	
-	def draw_distance(self):
+	
+	def scan_points(self):
 		for port in self.ports:
 			if port["name"] == "Distance Sensor":
 				data = port["data"][0]
-				if data != None:
-					length = port["data"][0] * 100
-					origin = (0, 0)
-					endpoint = (length, length)
-					pg.draw.line(self.app.screen, RED, origin, endpoint, 20)
-
+				if data == None:
+					break
+				length = port["data"][0]
+				self.scanned_points.append({"robot_position": (self.rect.centerx, self.rect.centery), "angle": self.rotation, "length": length})
+		## Prevent the scanned points from getting to big and causing lag
+		if len(self.scanned_points) > self.max_scanned_points:
+			self.scanned_points.pop(0)
 
 	def get_accelerometer(self):
 		data = self.monitor.status.accelerometer() 
@@ -148,14 +140,6 @@ class Robot(pg.sprite.Sprite):
 				data[i] = float(data[i])
 			else:
 				data[i] = 0
-		return data
-
-	def processed_accelerometer(self):
-		data = self.get_accelerometer()
-		data[0] = data[0] - (abs(self.get_orientation()[2]) * (1000/90))
-		data[1] = data[1]
-		data[2] = data[2]
-		
 		return data
 
 	def get_gyroscope(self):
