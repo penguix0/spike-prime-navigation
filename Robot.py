@@ -43,7 +43,7 @@ class Robot(pg.sprite.Sprite):
 		self.rotation = 0
 		## For smoothing the rotation on the screen
 		self.last_rotations = []
-		self.max_last_rotations = 4
+		self.max_last_rotations = ROTATION_SMOOTHING
 
 		self.setup_logger()
 
@@ -61,7 +61,7 @@ class Robot(pg.sprite.Sprite):
 		## Points scanned by the ultra sonic sensor
 		self.dummy_scan = {"robot_position": (0,0), "angle": 0, "length": 0}
 		self.scanned_points = [self.dummy_scan]
-		self.max_scanned_points = 1000
+		self.max_scanned_points = MAX_SCANNED_POINTS
 		self.setup_robot()
 
 	def setup_logger(self):
@@ -93,8 +93,8 @@ class Robot(pg.sprite.Sprite):
 		return max(min(num, max_value), min_value)
 
 	def move(self):
-		self.rect.centerx = self.x + self.camera.position()[0]
-		self.rect.centery = self.y + self.camera.position()[1]
+		self.rect.centerx = self.x + self.camera.get_position()[0]
+		self.rect.centery = self.y + self.camera.get_position()[1]
 	
 	def scale(self):
 		pass

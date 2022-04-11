@@ -1,3 +1,4 @@
+from comm.HubClient import ConnectionState
 from settings import *
 import pygame as pg
 import sys
@@ -23,20 +24,21 @@ class App:
         self.all_sprites = pg.sprite.Group()
         
         ## Center the camera
-        self.camera_offset = pg.math.Vector2(DISPLAY_SIZE[0] / 2, DISPLAY_SIZE[1] / 2)
-        self.camera = Camera(startPosX=self.camera_offset.x, 
-                             startPosY=self.camera_offset.y,
-                             zoom=1)
+        self.camera = Camera(startPosX=INITIAL_CAMERA_POS_X, 
+                             startPosY=INITIAL_CAMERA_POS_Y,
+                             zoom=INITIAL_ZOOM)
 
         self.robot = Robot(self, WHITE, ROBOT_WIDTH, ROBOT_HEIGHT)
 
     def run(self):
-        self.playing = True
-        while self.playing:
+        self.running = True
+        while self.running:
             self.dt = self.clock.tick(FPS) / 1000
             self.events()
             self.update()
             self.draw()
+            if self.robot.client.state == ConnectionState.DISCONNECTED:
+                self.running = False
 
     def quit(self):
         pg.quit()
@@ -48,21 +50,26 @@ class App:
     
     def draw_points(self):
         for point in self.robot.scanned_points:
-            length_added_point = pg.math.Vector2()
-            length_added_point.x = 0
-            length_added_point.y += point["length"] * 4
+            '''
+                First create a vector with only the length
+                then rotate that vector to the correct angle
+                then scale that point
+            '''
+            length = pg.math.Vector2(0, point["length"]*self.camera.get_zoom())
             robot_position = pg.math.Vector2(point["robot_position"])
-            rotated_point = length_added_point.rotate(-point["angle"]) + robot_position
-            camera_pos = pg.math.Vector2(self.camera.position()[0], self.camera.position()[1])
-            pg.draw.circle(self.screen, RED, 
-                           (rotated_point + camera_pos - self.camera_offset),
-                            5 * self.camera.zoom)
+            rotated_point = length.rotate(-point["angle"]) + robot_position
+            camera_pos = pg.math.Vector2(self.camera.get_position()[0], self.camera.get_position()[1])
+            pg.draw.circle(self.screen, 
+                           RED, 
+                           (rotated_point + camera_pos - pg.math.Vector2(INITIAL_CAMERA_POS_X, INITIAL_CAMERA_POS_Y)),
+                           5)
 
 
     def draw(self):
         self.screen.fill(BGCOLOR)
-        self.all_sprites.draw(self.screen)
+        ## Draw the scanned_points first so that they go under the robot
         self.draw_points()
+        self.all_sprites.draw(self.screen)
         pg.display.flip()
 
     def events(self):
@@ -85,9 +92,9 @@ class App:
                     self.camera.y += 10
                 ## Zoom the camera
                 if event.key == pg.K_q:
-                    self.camera.zoom -= 0.1
+                    self.camera.set_zoom(self.camera.get_zoom() - 0.05)
                 if event.key == pg.K_e:
-                    self.camera.zoom += 0.1
+                    self.camera.set_zoom(self.camera.get_zoom() + 0.05)
 
 
     def show_start_screen(self):
