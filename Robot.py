@@ -1,23 +1,7 @@
 #! /usr/bin/python3
-
-from tokenize import String
-import yaml
-
-from comm.HubClient import ConnectionState
-with open("path.yaml") as file:
-	try: 
-		global pathConfig
-		pathConfig = yaml.safe_load(file)
-	except yaml.YAMLError as exc:
-		print (exc)
-
-from os import chdir
-chdir(pathConfig["path"])
-
-import os, sys
-
 from settings import *
 import pygame as pg
+from comm.HubClient import ConnectionState
 
 class Robot(pg.sprite.Sprite):
 	def __init__(self, app, color, width, height):
@@ -45,8 +29,6 @@ class Robot(pg.sprite.Sprite):
 		self.last_rotations = []
 		self.max_last_rotations = ROTATION_SMOOTHING
 
-		self.setup_logger()
-
 		self.status = None
 				
 		self.port_a = {"name": None, "data": None}
@@ -62,17 +44,8 @@ class Robot(pg.sprite.Sprite):
 		self.dummy_scan = {"robot_position": (0,0), "angle": 0, "length": 0}
 		self.scanned_points = [self.dummy_scan]
 		self.max_scanned_points = MAX_SCANNED_POINTS
+
 		self.setup_robot()
-
-	def setup_logger(self):
-		from logging import getLogger
-		from utils.setup import setup_logging
-		self.logger = getLogger("App")
-
-		log_filename = os.path.dirname(pathConfig["path"]) + "/logs/hubstatus.log"
-		setup_logging(log_filename)
-
-		self.logger.info("LEGO status app starting up")
 
 	def setup_robot(self):
 		from comm.HubClient import HubClient
