@@ -62,7 +62,7 @@ class App:
             pg.draw.circle(self.screen, 
                            RED, 
                            (rotated_point + camera_pos - pg.math.Vector2(INITIAL_CAMERA_POS_X, INITIAL_CAMERA_POS_Y)),
-                           5)
+                           DOT_SIZE)
 
 
     def draw(self):
@@ -81,6 +81,7 @@ class App:
                     self.quit()
                 if event.key == pg.K_r:
                     self.robot.scanned_points = [self.robot.dummy_scan]
+                    self.robot.pos = pg.math.Vector2(0, 0)
                 ## Move the camera
                 if event.key == pg.K_a:
                     self.camera.x -= 10

@@ -15,20 +15,20 @@
 #connection: serial
 
 # Configuration for serial on specified port
-#connection: serial
-#serial:
-#  device: '/dev/ttyS3'
+connection: serial
+serial:
+ device: '/dev/cu.usbmodemFA131'
 
 # Configuration for bluetooth
 # Set the BlueTooth address and port of the RFCOMM function.
-connection: bluetooth
-bluetooth:
-  address: 'A8:E2:C1:9C:7B:75'
-  port: 1
+# connection: bluetooth
+# bluetooth:
+#   address: 'A8:E2:C1:9C:7B:75'
+#   port: 1
 
 # Configuration for multiplexed between serial and bluetooth with failover
 # Set the BlueTooth address and port of the RFCOMM function.
-#connection: multiplexed
-#bluetooth:
+# connection: multiplexed
+# bluetooth:
 #  address: 'A8:E2:C1:9C:7B:75'
 #  port: 1
