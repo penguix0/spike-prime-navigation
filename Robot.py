@@ -113,6 +113,9 @@ class Robot(pg.sprite.Sprite):
 	def get_motor_angle(self, port):
 		return self.monitor._status.port_raw(port)[1][2]
 	
+	def get_motor_stall(self, port):
+		return self.monitor._status.port_raw(port)[1][3]
+	
 	def set_motor_angle(self, port, speed, position, stall):
 		self.client.send_message('scratch.motor_go_to_relative_position', { 'port': port, 'speed': speed, 'position': position, 'stall': stall, 'stop': True})
 	
@@ -179,6 +182,9 @@ class Robot(pg.sprite.Sprite):
 					'''
 				self.pos = calculate_new_xy(self.pos, -round(speed, 1)*0.03, -self.rotation+ROBOT_ROTATION_OFFSET)
 
+		if self.get_motor_stall(MOTOR_NUMERIC_PORT) == MOTOR_STALL_VALUE:
+			self.turn_automatic()
+
 		## Rotate the robot on the screen
 		self.rect.centerx = self.pos.x + self.camera.get_position()[0]
 		self.rect.centery = self.pos.y + self.camera.get_position()[1]
@@ -189,12 +195,15 @@ class Robot(pg.sprite.Sprite):
 	"""rotate an image while keeping its center and smooth the rotation"""
 	def rotate(self):
 		self.update_rotation()
+
+		## Smooth rotation
 		self.last_rotations.append(self.rotation)
 		## If the list is becoming too long delete the oldest value
 		if len(self.last_rotations) > self.max_last_rotations:
 			self.last_rotations.pop(0)
 		list_average = sum(self.last_rotations) / len(self.last_rotations)
 
+		## Apply rotation
 		self.image = pg.transform.rotozoom(self.original_image, list_average, 1)
 		self.rect = self.image.get_rect(center = self.rect.center)
 
@@ -206,6 +215,7 @@ class Robot(pg.sprite.Sprite):
 			self.update_ports()
 			self.scan_points()
 			self.update_rotation()
+			print (self.pos)
 	
 	def scan_points(self):
 		for port in self.ports:
@@ -217,7 +227,10 @@ class Robot(pg.sprite.Sprite):
 				self.scanned_points.append({"robot_position": (self.rect.centerx, self.rect.centery), "angle": self.rotation, "length": length})
 		## Prevent the scanned points from getting to big and causing lag
 		if len(self.scanned_points) > self.max_scanned_points:
+			print (self.scanned_points[0])
+			self.scanned_points[0]["object"].remove()
 			self.scanned_points.pop(0)
+
 
 	def get_accelerometer(self):
 		data = self.monitor.status.accelerometer() 
