@@ -1,16 +1,28 @@
-from comm.HubClient import ConnectionState
 from settings import *
 import pygame as pg
 import sys
 from Robot import Robot
 from camera import Camera
+import threading
 
 class App:
     def __init__(self):
         pg.init()
         self.screen = pg.display.set_mode(DISPLAY_SIZE)
         pg.display.set_caption(TITLE)
+        self.icon = pg.image.load('icon.png')
+        pg.display.set_icon(self.icon)
         self.clock = pg.time.Clock()
+
+        self.fonts_initiated = False
+
+        self.modes = { 
+            "1": ["Ziek", False],
+            "2": ["Normaal", False],
+            "3": ["Auto", False]
+        }
+        self.mode_text = "Druk een getal in om een modus te selecteren."
+
         self.load_data()
         self.new()
         self.run()
@@ -29,6 +41,9 @@ class App:
                              zoom=INITIAL_ZOOM)
 
         self.robot = Robot(self, WHITE, ROBOT_WIDTH, ROBOT_HEIGHT)
+        
+        create_fonts = threading.Thread(target=self.initialize_fonts())
+        create_fonts.start()
 
     def run(self):
         self.running = True
@@ -37,8 +52,6 @@ class App:
             self.events()
             self.update()
             self.draw()
-            if self.robot.client.state == ConnectionState.DISCONNECTED:
-                self.running = False
 
     def quit(self):
         pg.quit()
@@ -57,19 +70,34 @@ class App:
             '''
             length = pg.math.Vector2(0, point["length"]*self.camera.get_zoom())
             robot_position = pg.math.Vector2(point["robot_position"])
-            rotated_point = length.rotate(-point["angle"]) + robot_position
-            camera_pos = pg.math.Vector2(self.camera.get_position()[0], self.camera.get_position()[1])
+            rotated_point = length.rotate(-point["angle"])
             pg.draw.circle(self.screen, 
                            RED, 
-                           (rotated_point + camera_pos - pg.math.Vector2(INITIAL_CAMERA_POS_X, INITIAL_CAMERA_POS_Y)),
+                           (rotated_point + robot_position),
                            DOT_SIZE)
-
+    
+    def draw_text(self):
+        if self.fonts_initiated and self.robot.setup_complete:
+            position = self.font.render('Position: ' + str(self.robot.pos), True, GRAY)
+            self.screen.blit(position, (20, 20))
+            speed = self.font.render('Speed: ' + str(round(self.robot.speed, 1)), True, GRAY)
+            self.screen.blit(speed, (20, 40))
+            mode = self.font.render('Mode: ' + self.mode_text, True, GRAY)
+            self.screen.blit(mode, (20, 60))
+            if type(self.robot.tracker_state) == str:
+                nek = self.font.render('Nek: ' + self.robot.tracker_state, True, GRAY)
+            elif self.robot.tracker_state == True:
+                nek = self.font.render('Nek: omlaag', True, GRAY)
+            elif self.robot.tracker_state == False:
+                nek = self.font.render('Nek: omhoog', True, GRAY)
+            self.screen.blit(nek, (20, 80))
 
     def draw(self):
         self.screen.fill(BGCOLOR)
         ## Draw the scanned_points first so that they go under the robot
         self.draw_points()
         self.all_sprites.draw(self.screen)
+        self.draw_text()
         pg.display.flip()
 
     def events(self):
@@ -79,27 +107,55 @@ class App:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     self.quit()
+                if event.key == pg.K_q:
+                    self.quit()
                 if event.key == pg.K_r:
                     self.robot.scanned_points = [self.robot.dummy_scan]
-                    self.robot.pos = pg.math.Vector2(0, 0)
+                    self.camera.x = -self.robot.pos.x + INITIAL_CAMERA_POS_X
+                    self.camera.y = -self.robot.pos.y + INITIAL_CAMERA_POS_Y
                 ## Move the camera
                 if event.key == pg.K_a:
-                    self.camera.x -= 10
+                    if not self.mode_text == self.modes["3"][0]:
+                        self.camera.x -= 10
+                    else:
+                        self.robot.turn_left(STEERING_PORT, STEERING_SPEED)
                 if event.key == pg.K_d:
-                    self.camera.x += 10
+                    if not self.mode_text == self.modes["3"][0]:
+                        self.camera.x += 10
+                    else:
+                        self.robot.turn_right(STEERING_PORT, STEERING_SPEED)
                 if event.key == pg.K_w:
-                    self.camera.y -= 10
+                    if not self.mode_text == self.modes["3"][0]:
+                        self.camera.y -= 10
+                    else:
+                        self.robot.turn_centre(STEERING_PORT, STEERING_SPEED)
                 if event.key == pg.K_s:
-                    self.camera.y += 10
-                ## Zoom the camera
-                if event.key == pg.K_q:
-                    self.camera.set_zoom(self.camera.get_zoom() - 0.05)
-                if event.key == pg.K_e:
-                    self.camera.set_zoom(self.camera.get_zoom() + 0.05)
+                    if not self.mode_text == self.modes["3"][0]:
+                        self.camera.y += 10
 
+                ## Switch modes
+                if event.key == pg.K_1:
+                    self.mode_text = self.modes["1"][0]
+                if event.key == pg.K_2:
+                    self.mode_text = self.modes["2"][0]
+                if event.key == pg.K_3:
+                    self.mode_text = self.modes["3"][0]
+                    self.robot.speed = -100
+                
+                ## Change "nek"
+                if event.key == pg.K_9 and self.robot.tracker_calibrated and self.mode_text == self.modes["3"][0]:
+                    self.robot.tracker_state = False
+                    self.robot.tracker_moved = False
+                if event.key == pg.K_0 and self.robot.tracker_calibrated and self.mode_text == self.modes["3"][0]:
+                    self.robot.tracker_state = True
+                    self.robot.tracker_moved = False
 
     def show_start_screen(self):
         pass
+
+    def initialize_fonts(self):
+        self.font = pg.font.SysFont(None, TEXT_SIZE)
+        self.fonts_initiated = True
 
 
 app = App()
