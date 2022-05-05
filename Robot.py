@@ -168,6 +168,7 @@ class Robot(pg.sprite.Sprite):
 			if self.sensor_distance < DISTANCE_TO_STOP*2:
 				self.turning = False
 			self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+			self.turn_center(STEERING_PORT, STEERING_SPEED)
 
 
 	def move(self):

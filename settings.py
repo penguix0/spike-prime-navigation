@@ -61,9 +61,9 @@ STEERING_ACCELERATION = 10
 STEERING_DECELERATION = 10
 ## Angle difference between middle and left or right.
 STEERING_TURNING_ANGLE = 70
-STEERING_LEFT = 70
+STEERING_LEFT = 60
 STEERING_MIDDLE = 0
-STEERING_RIGHT = -70
+STEERING_RIGHT = -60
 ## this slot on the hub holds a small program whichs centers the steering wheel, this program is made by lego itself and can be found in the home edition of lego mindstorms robot inventor:
 ## When program is started
 ## M.V.P. calibrate
