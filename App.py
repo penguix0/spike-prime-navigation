@@ -158,7 +158,8 @@ class App:
 
             if event.type == self.robot.EAT:
                 self.robot.activity_text = "eten"
-                self.robot.eat()
+                x = threading.Thread(target=self.robot.eat)
+                x.start()
             if event.type == self.robot.STAND_STILL:
                 self.robot.activity_text = "stil staan"
                 self.robot.stand_still()
