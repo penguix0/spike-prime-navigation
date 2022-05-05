@@ -86,7 +86,7 @@ class App:
             mode = self.font.render('Mode: ' + self.mode_text, True, GRAY)
             self.screen.blit(mode, (20, 60))
             if self.robot.activity != None:
-                activity = self.font.render('Activiteit: ' + str(self.robot.activity), True, GRAY)
+                activity = self.font.render('Activiteit: ' + str(self.robot.activity_text), True, GRAY)
             else:
                 activity = self.font.render('Activiteit: -', True, GRAY)
             self.screen.blit(activity, (20, 80))
@@ -157,13 +157,18 @@ class App:
                     self.robot.tracker_moved = False
 
             if event.type == self.robot.EAT:
+                self.robot.activity_text = "eten"
                 self.robot.eat()
             if event.type == self.robot.STAND_STILL:
+                self.robot.activity_text = "stil staan"
                 self.robot.stand_still()
             if event.type == self.robot.REST:
+                self.robot.activity_text = "rusten"
                 self.robot.rest()
             if event.type == self.robot.WALK:
-                self.robot.walk()
+                self.robot.activity_text = "lopen"
+                x = threading.Thread(target=self.robot.walk)
+                x.start()
 
 
 

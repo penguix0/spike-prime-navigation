@@ -72,6 +72,8 @@ class Robot(pg.sprite.Sprite):
 		self.EVENTS_NORMAL = [self.EAT, self.WALK, self.STAND_STILL, self.REST]
 		self.EVENTS_SICK = [self.EAT, self.WALK, self.WALK, self.WALK, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.REST]
 		self.activity = None
+		self.activity_text = " - "
+		self.moving = False
 
 		## ---===== Tracking =====----
 		self.tracker_down = None
@@ -162,23 +164,31 @@ class Robot(pg.sprite.Sprite):
 	## Moving
 
 	def walk(self):
-		min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
-		self.speed = -((sqrt(abs(self.sensor_distance*1000)+DISTANCE_TO_STOP)) + min_speed)
-		if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
-			self.speed = MOTOR_BACKING_SPEED
-			if random.randint(1, 2) == 2:
-				self.turn_right(STEERING_PORT, STEERING_SPEED)
-			else:
-				self.turn_left(STEERING_PORT, STEERING_SPEED)
+		## Move the nek up
+		self.tracker_state = False
+		self.tracker_moved = False
+		
+		self.moving = True
+		while self.moving == True:
+			min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
+			self.speed = -((sqrt(abs(self.sensor_distance*1000)+DISTANCE_TO_STOP)) + min_speed)
+			if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
+				self.speed = MOTOR_BACKING_SPEED
+				if random.randint(1, 2) == 2:
+					self.turn_right(STEERING_PORT, STEERING_SPEED)
+				else:
+					self.turn_left(STEERING_PORT, STEERING_SPEED)
 
-			self.turning = True
+				self.turning = True
 
-		else: 
-			if self.sensor_distance < DISTANCE_TO_STOP*2:
-				self.turning = False
-				self.turn_center(STEERING_PORT, STEERING_SPEED)
+			else: 
+				if self.sensor_distance < DISTANCE_TO_STOP*2:
+					self.turning = False
+					self.turn_center(STEERING_PORT, STEERING_SPEED)
 
 	def stand_still(self):
+		self.moving = False
+		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
 		if random.randint(1, NEK_ACTIVATE_CHANCE_NORMAL) == 1:
 			self.tracker_state = True
@@ -188,11 +198,15 @@ class Robot(pg.sprite.Sprite):
 			self.tracker_moved = False
 	
 	def rest(self):
+		self.moving = False
+		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
 		self.tracker_state = True
 		self.tracker_moved = False
 
 	def eat(self):
+		self.moving = False
+		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = MIN_MOTOR_SPEED
 		if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
 			self.turn_left(STEERING_PORT, STEERING_SPEED)
