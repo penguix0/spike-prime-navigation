@@ -5,6 +5,7 @@ from comm.HubClient import ConnectionState
 from time import sleep
 from math import sqrt
 import threading
+import random
 
 def calculate_new_xy(old_xy, speed, angle_in_degrees):
     move_vec = pg.math.Vector2()
@@ -50,6 +51,8 @@ class Robot(pg.sprite.Sprite):
 		
 		self.ports = [self.port_a, self.port_b, self.port_c, self.port_d, self.port_e, self.port_f]
 
+		self.sensor_distance = 0
+
 
 		## ---===== Scanning =====----
 		## Points scanned by the ultra sonic sensor
@@ -63,7 +66,7 @@ class Robot(pg.sprite.Sprite):
 
 		## ---===== Tracking =====----
 		self.tracker_down = None
-		self.tracker_state = "Gebruik de nummers 9 & 0 om de 'nek' te bedienen"
+		self.tracker_state = "Gebruik de nummers 9 & 0 om de 'nek' te bedienen in auto modus"
 		self.tracker_moved = True
 		self.tracker_calibrated = False
 
@@ -93,17 +96,13 @@ class Robot(pg.sprite.Sprite):
 		self.calibrate_steer(STEERING_CALIBRATING_SLOT, 3)
 		
 		self.calibrate_tracker(TRACKER_PORT)
-		
-		turn_tracker = threading.Thread(target=self.turn_tracker)
-		turn_tracker.start()
+
+	## Motors
 
 	def update_ports(self):
 		for i in range(0, len(self.ports)):
 			self.ports[i]["name"] = self.monitor.status.port_device_name(i)
 			self.ports[i]["data"] = self.monitor.status.port_device_data(i)
-		
-	def clamp(self, num, min_value, max_value):
-		return max(min(num, max_value), min_value)
 
 	def motor_start(self, port, speed, max_power, acceleration, deceleration, stall):
 		self.client.send_message('scratch.motor_start', {'port': port, 'speed': speed, 'max_power': max_power, 'acceleration': acceleration, 'deceleration': deceleration, 'stall': stall})
@@ -118,10 +117,15 @@ class Robot(pg.sprite.Sprite):
 		return self.monitor._status.port_raw(port)[1][3]
 	
 	def set_motor_angle(self, port, speed, position, stall):
-		self.client.send_message('scratch.motor_go_to_relative_position', { 'port': port, 'speed': speed, 'position': position, 'stall': stall, 'stop': True})
+		self.client.send_message_without_response('scratch.motor_go_to_relative_position', { 'port': port, 'speed': speed, 'position': position, 'stall': stall, 'stop': True})
+		
+	def set_motor_absolute_angle(self, port, speed, direction, position, stall):
+		self.client.send_message_without_response('scratch.motor_go_direction_to_position', { 'port': port, 'speed': speed, 'position': position,  'direction': direction, 'stall': stall, 'stop': True})
 	
 	def motor_run_for_degrees(self, port, speed, stall, stop, degrees):
 		self.client.send_message('scratch.motor_run_for_degrees', { 'port': port, 'speed': speed, 'stall': stall, 'stop': stop,'degrees': degrees})
+
+	## Calibrating
 
 	def calibrate_steer(self, port, time):
 		self.client.program_execute(port)
@@ -130,29 +134,13 @@ class Robot(pg.sprite.Sprite):
 		self.client.send_message('scratch.display_clear')
 		self.middle = self.get_motor_angle(STEERING_PORT_NUMERIC)
 	
-	def calibrate_tracker(self, port):
-		## Get the motor angle facing downwards
-		self.motor_start(port, TRACKER_SPEED, TRACKER_MAX_POWER, 1, 1, 1)
-		motor_stalled = False
-		while not motor_stalled:
-			sleep(0.01)
-			if self.get_motor_stall(TRACKER_PORT_NUMERIC) >= TRACKER_STALL:
-				motor_stalled = True
-		self.motor_stop(TRACKER_PORT)
-
-		self.tracker_down = self.get_motor_angle(TRACKER_PORT_NUMERIC)
-
-		## Move the motor up for a certain amaount of degrees
-		self.motor_start(port, -TRACKER_SPEED, TRACKER_MAX_POWER, 1, 1, 1)
-		correct_pos = False
-		while not correct_pos:
-			sleep(0.01)
-			if self.get_motor_angle(TRACKER_PORT_NUMERIC) < self.tracker_down - TRACKER_FLAT_ANGLE:
-				correct_pos = True
-		self.motor_stop(TRACKER_PORT)
-
-		self.tracker_calibrated = True
+	def calibrate_tracker(self, port):		
+		self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'clockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
 		
+		self.tracker_calibrated = True
+
+	## Turning
+
 	def turn_left(self, port, speed):
 		self.set_motor_angle(port, speed, STEERING_LEFT, True)
 
@@ -162,87 +150,66 @@ class Robot(pg.sprite.Sprite):
 	def turn_center(self, port, speed):
 		self.set_motor_angle(port, speed, STEERING_MIDDLE, True)
 
-	def turn_automatic(self):
-		self.turn_left(STEERING_PORT, STEERING_SPEED)
+	## Moving
 
-		self.motor_start(MOTOR_PORT, MOTOR_BACKING_SPEED, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+	def walk(self):
+		min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
+		self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + min_speed)
+		if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
+			self.motor_start(MOTOR_PORT, MOTOR_BACKING_SPEED, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+			if random.randint(1, 2) == 2:
+				self.turn_right(STEERING_PORT, STEERING_SPEED)
+			else:
+				self.turn_left(STEERING_PORT, STEERING_SPEED)
 
-		sleep(1)
+			self.turning = True
 
-		self.turn_right(STEERING_PORT, STEERING_SPEED)
-
-		self.motor_start(MOTOR_PORT, MOTOR_SPEED, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
-
-		sleep(1)
-
-		self.turn_center(STEERING_PORT, STEERING_SPEED)
-
-		self.motor_stop(MOTOR_PORT)
-
-	def turn_tracker(self):
-		while self.client.state == ConnectionState.TELEMETRY:
-			if self.tracker_state == True and self.tracker_moved == False:
-				## Move the tracker downwards
-				self.motor_start(TRACKER_PORT, TRACKER_SPEED, TRACKER_MAX_POWER, 1, 1, 1)
-				motor_stalled = False
-				while not motor_stalled:
-					if self.get_motor_stall(TRACKER_PORT_NUMERIC) >= TRACKER_STALL:
-						sleep(0.05)
-						motor_stalled = True
-				self.motor_stop(TRACKER_PORT)
-				self.tracker_moved = True
-			elif self.tracker_state == False and self.tracker_moved == False:		
-				## Move the motor up for a certain amaount of degrees
-				self.motor_start(TRACKER_PORT, -TRACKER_SPEED, TRACKER_MAX_POWER, 1, 1, 1)
-				correct_pos = False
-				while not correct_pos:
-					sleep(0.01)
-					if self.get_motor_angle(TRACKER_PORT_NUMERIC) < self.tracker_down - TRACKER_FLAT_ANGLE:
-						sleep(0.05)
-						correct_pos = True
-					if self.get_motor_stall(TRACKER_PORT_NUMERIC) >= TRACKER_STALL:
-						correct_pos = True
-				self.motor_stop(TRACKER_PORT)
-				self.tracker_moved = True
-
-	def move(self):
-		if self.app.mode_text != "Auto" and self.setup_complete:
-			length = 0
-			for port in self.ports:
-				if port["name"] == "Distance Sensor":
-					data = port["data"][0]
-					if data == None:
-						length = 100
-					else:
-						length = data
-			
-			min_distance = 10
-			initial_speed = -30
-			sensitivity = 100
-			self.speed = -((sqrt(abs(length*sensitivity)+min_distance)) + initial_speed)
-			if self.speed > -4 and not self.turning:
-				self.motor_stop(MOTOR_PORT)
-				self.turning = True
+		else: 
+			if self.sensor_distance < DISTANCE_TO_STOP*2:
 				self.turning = False
-			else: 
-				self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
-				'''
-					First create a vector with only the length
-					then rotate that vector to the correct angle
-					then scale that point
-				'''
-			self.pos = calculate_new_xy(self.pos, -round(self.speed, 1)*0.03, -self.rotation+ROBOT_ROTATION_OFFSET)
-
-			if self.get_motor_stall(MOTOR_NUMERIC_PORT) == MOTOR_STALL_VALUE:
-				self.turn_automatic()
-
-		else:
 			self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
 
+
+	def move(self):
+		for port in self.ports:
+			if port["name"] == "Distance Sensor":
+				data = port["data"][0]
+				if data == None:
+					self.sensor_distance = 100
+				else:
+					self.sensor_distance = data
+
+		if self.setup_complete:
+			if self.app.mode_text == "Normaal":
+				## Do normal stuff
+				## Decide what to do
+				pass
+			elif self.app.mode_text == "Ziek":
+				## Do ziek stuff
+				## Decide what to do
+				## if decision == "walking":
+				self.walk()
+				
+			elif self.app.mode_text == "Auto":
+				pass
+
+		if self.get_motor_stall(MOTOR_NUMERIC_PORT) == MOTOR_STALL_VALUE:
+			self.speed = 20
+
+		## Calculate the new position based on the speed
 		self.pos = calculate_new_xy(self.pos, -round(self.speed, 1)*0.03, -self.rotation+ROBOT_ROTATION_OFFSET)
-		## Rotate the robot on the screen
+		
+		## Rotate/move the robot on the screen
 		self.rect.centerx = self.pos.x + self.camera.get_position()[0]
 		self.rect.centery = self.pos.y + self.camera.get_position()[1]
+
+		## Rotate the trac ker
+		if self.tracker_state == True and self.tracker_moved == False:
+			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'clockwise', TRACKER_DOWN_ANGLE, TRACKER_STALL)
+			self.tracker_moved = True
+		elif self.tracker_state == False and self.tracker_moved == False:	
+			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'counterclockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
+			self.tracker_moved = True
 
 	def update_rotation(self):
 		self.rotation = (self.get_orientation()[0])
@@ -271,7 +238,7 @@ class Robot(pg.sprite.Sprite):
 				self.update_ports()
 				self.scan_points()
 				self.update_rotation()
-	
+
 	def scan_points(self):
 		for port in self.ports:
 			if port["name"] == "Distance Sensor":
@@ -284,8 +251,7 @@ class Robot(pg.sprite.Sprite):
 		if len(self.scanned_points) > self.max_scanned_points:
 			self.scanned_points.pop(0)
 
-	def set_display_text(self, text):
-		self.client.send_message('scratch.display_text', {'text':text})
+	## Movement sensors
 
 	def get_accelerometer(self):
 		data = self.monitor.status.accelerometer() 

@@ -4,6 +4,7 @@ import sys
 from Robot import Robot
 from camera import Camera
 import threading
+import random
 
 class App:
     def __init__(self):
@@ -128,7 +129,7 @@ class App:
                     if not self.mode_text == self.modes["3"][0]:
                         self.camera.y -= 10
                     else:
-                        self.robot.turn_centre(STEERING_PORT, STEERING_SPEED)
+                        self.robot.turn_center(STEERING_PORT, STEERING_SPEED)
                 if event.key == pg.K_s:
                     if not self.mode_text == self.modes["3"][0]:
                         self.camera.y += 10
@@ -149,6 +150,19 @@ class App:
                 if event.key == pg.K_0 and self.robot.tracker_calibrated and self.mode_text == self.modes["3"][0]:
                     self.robot.tracker_state = True
                     self.robot.tracker_moved = False
+            
+        if random.randint(0, NEK_ACTIVATE_CHANCE_NORMAL) == 1 and self.mode_text == self.modes["2"][0]:
+            ## Check if the tracker_state is already True
+            if self.robot.tracker_state != True:
+                self.robot.tracker_state = True
+                self.robot.tracker_moved = False
+        
+        if random.randint(0, NEK_DURATION_CHANCE_NORMAL) == 1 and self.mode_text == self.modes["2"][0]:
+            ## Check if the tracker_state is already False
+            if self.robot.tracker_state != False:
+                self.robot.tracker_state = False
+                self.robot.tracker_moved = False
+
 
     def show_start_screen(self):
         pass

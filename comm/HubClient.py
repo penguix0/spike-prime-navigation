@@ -110,6 +110,18 @@ class HubClient(object):
         letters = string.ascii_letters + string.digits + '_'
         return ''.join(random.choice(letters) for _ in range(length))    
 
+    def send_message_without_response(self, name:str, params = {}):
+        """Send a message and doesn't return the response.
+        """
+        if self.state != ConnectionState.TELEMETRY:
+            logger.warn('ignoring send request in state %s', self.state)
+            return
+
+        id = self._gen_message_id()
+        msg = {'m':name, 'p': params, 'i': id}
+        msg_string = json.dumps(msg)
+        self.send_line(msg_string)
+
     def send_message(self, name:str, params = {}):
         """Send a message and return the response.
         """
