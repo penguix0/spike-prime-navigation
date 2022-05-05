@@ -74,6 +74,7 @@ class Robot(pg.sprite.Sprite):
 		self.activity = None
 		self.activity_text = " - "
 		self.moving = False
+		self.event_ended = True
 
 		## ---===== Tracking =====----
 		self.tracker_down = None
@@ -187,6 +188,7 @@ class Robot(pg.sprite.Sprite):
 				if self.sensor_distance < DISTANCE_TO_STOP*2:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
+		self.event_ended = True
 
 	def stand_still(self):
 		self.moving = False
@@ -201,6 +203,8 @@ class Robot(pg.sprite.Sprite):
 			if self.tracker_state:
 				self.tracker_state = False
 				self.tracker_moved = False
+		self.event_ended = True
+
 	
 	def rest(self):
 		self.moving = False
@@ -210,6 +214,8 @@ class Robot(pg.sprite.Sprite):
 		if not self.tracker_state:
 			self.tracker_state = True
 			self.tracker_moved = False
+		self.event_ended = True
+
 
 	def eat(self):
 		self.eating = True
@@ -237,6 +243,8 @@ class Robot(pg.sprite.Sprite):
 				if self.sensor_distance < DISTANCE_TO_STOP*2:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
+		self.event_ended = True
+
 
 
 	def move(self):
@@ -249,27 +257,25 @@ class Robot(pg.sprite.Sprite):
 					self.sensor_distance = data
 
 		if self.setup_complete:
-			if self.app.mode_text == "Normaal":
+			if self.app.mode_text == "Normaal" and self.event_ended:
 				## Do normal stuff
 				## Decide what to do
 				event = random.choice(self.EVENTS_NORMAL)
 				self.activity = event
 				pg.time.set_timer(event, ACTIVITY_TIME_NORMAL)
-			elif self.app.mode_text == "Ziek":
+				self.event_ended = False
+			elif self.app.mode_text == "Ziek" and self.event_ended:
 				## Do ziek stuff
 				## Decide what to do
 				## if decision == "walking":
 				event = random.choice(self.EVENTS_SICK)
 				self.activity = event
 				pg.time.set_timer(event, ACTIVITY_TIME_SICK)
+				self.event_ended = False
 				
 			elif self.app.mode_text == "Auto":
 				pass
 
-		if self.get_motor_stall(MOTOR_NUMERIC_PORT) == MOTOR_STALL_VALUE:
-			self.turn_right(STEERING_PORT, STEERING_SPEED)
-			self.speed = MOTOR_BACKING_SPEED
-		
 		self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
 
 
