@@ -64,6 +64,15 @@ class Robot(pg.sprite.Sprite):
 		self.middle = None
 		self.turning = False
 
+		## ---===== Events =====----
+		self.EAT = pg.USEREVENT + 2
+		self.WALK = pg.USEREVENT + 3
+		self.STAND_STILL = pg.USEREVENT + 4
+		self.REST = pg.USEREVENT + 5
+		self.EVENTS_NORMAL = [self.EAT, self.WALK, self.STAND_STILL, self.REST]
+		self.EVENTS_SICK = [self.EAT, self.WALK, self.WALK, self.WALK, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.REST]
+		self.activity = None
+
 		## ---===== Tracking =====----
 		self.tracker_down = None
 		self.tracker_state = "Gebruik de nummers 9 & 0 om de 'nek' te bedienen in auto modus"
@@ -154,9 +163,9 @@ class Robot(pg.sprite.Sprite):
 
 	def walk(self):
 		min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
-		self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + min_speed)
+		self.speed = -((sqrt(abs(self.sensor_distance*1000)+DISTANCE_TO_STOP)) + min_speed)
 		if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
-			self.motor_start(MOTOR_PORT, MOTOR_BACKING_SPEED, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+			self.speed = MOTOR_BACKING_SPEED
 			if random.randint(1, 2) == 2:
 				self.turn_right(STEERING_PORT, STEERING_SPEED)
 			else:
@@ -167,8 +176,33 @@ class Robot(pg.sprite.Sprite):
 		else: 
 			if self.sensor_distance < DISTANCE_TO_STOP*2:
 				self.turning = False
-			self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
-			self.turn_center(STEERING_PORT, STEERING_SPEED)
+				self.turn_center(STEERING_PORT, STEERING_SPEED)
+
+	def stand_still(self):
+		self.speed = 0
+		if random.randint(1, NEK_ACTIVATE_CHANCE_NORMAL) == 1:
+			self.tracker_state = True
+			self.tracker_moved = False
+		elif random.randint(1, NEK_DURATION_CHANCE_NORMAL) == 1:
+			self.tracker_state = False
+			self.tracker_moved = False
+	
+	def rest(self):
+		self.speed = 0
+		self.tracker_state = True
+		self.tracker_moved = False
+
+	def eat(self):
+		self.speed = MIN_MOTOR_SPEED
+		if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
+			self.turn_left(STEERING_PORT, STEERING_SPEED)
+			self.speed = -MOTOR_BACKING_SPEED
+		if random.randint(1, 10) == 1:
+			self.tracker_state = True
+			self.tracker_moved = False
+		if random.randint(1, 1000) == 1:
+			self.tracker_state = False
+			self.tracker_moved = False
 
 
 	def move(self):
@@ -184,18 +218,26 @@ class Robot(pg.sprite.Sprite):
 			if self.app.mode_text == "Normaal":
 				## Do normal stuff
 				## Decide what to do
-				pass
+				event = random.choice(self.EVENTS_NORMAL)
+				self.activity = event
+				pg.time.set_timer(event, ACTIVITY_TIME_NORMAL)
 			elif self.app.mode_text == "Ziek":
 				## Do ziek stuff
 				## Decide what to do
 				## if decision == "walking":
-				self.walk()
+				event = random.choice(self.EVENTS_SICK)
+				self.activity = event
+				pg.time.set_timer(event, ACTIVITY_TIME_SICK)
 				
 			elif self.app.mode_text == "Auto":
 				pass
 
 		if self.get_motor_stall(MOTOR_NUMERIC_PORT) == MOTOR_STALL_VALUE:
-			self.speed = 20
+			self.turn_right(STEERING_PORT, STEERING_SPEED)
+			self.speed = MOTOR_BACKING_SPEED
+		
+		self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+
 
 		## Calculate the new position based on the speed
 		self.pos = calculate_new_xy(self.pos, -round(self.speed, 1)*0.03, -self.rotation+ROBOT_ROTATION_OFFSET)

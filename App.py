@@ -85,13 +85,18 @@ class App:
             self.screen.blit(speed, (20, 40))
             mode = self.font.render('Mode: ' + self.mode_text, True, GRAY)
             self.screen.blit(mode, (20, 60))
+            if self.robot.activity != None:
+                activity = self.font.render('Activiteit: ' + str(self.robot.activity), True, GRAY)
+            else:
+                activity = self.font.render('Activiteit: -', True, GRAY)
+            self.screen.blit(activity, (20, 80))
             if type(self.robot.tracker_state) == str:
                 nek = self.font.render('Nek: ' + self.robot.tracker_state, True, GRAY)
             elif self.robot.tracker_state == True:
                 nek = self.font.render('Nek: omlaag', True, GRAY)
             elif self.robot.tracker_state == False:
                 nek = self.font.render('Nek: omhoog', True, GRAY)
-            self.screen.blit(nek, (20, 80))
+            self.screen.blit(nek, (20, 100))
 
     def draw(self):
         self.screen.fill(BGCOLOR)
@@ -150,18 +155,16 @@ class App:
                 if event.key == pg.K_0 and self.robot.tracker_calibrated and self.mode_text == self.modes["3"][0]:
                     self.robot.tracker_state = True
                     self.robot.tracker_moved = False
-            
-        if random.randint(0, NEK_ACTIVATE_CHANCE_NORMAL) == 1 and self.mode_text == self.modes["2"][0]:
-            ## Check if the tracker_state is already True
-            if self.robot.tracker_state != True:
-                self.robot.tracker_state = True
-                self.robot.tracker_moved = False
-        
-        if random.randint(0, NEK_DURATION_CHANCE_NORMAL) == 1 and self.mode_text == self.modes["2"][0]:
-            ## Check if the tracker_state is already False
-            if self.robot.tracker_state != False:
-                self.robot.tracker_state = False
-                self.robot.tracker_moved = False
+
+            if event.type == self.robot.EAT:
+                self.robot.eat()
+            if event.type == self.robot.STAND_STILL:
+                self.robot.stand_still()
+            if event.type == self.robot.REST:
+                self.robot.rest()
+            if event.type == self.robot.WALK:
+                self.robot.walk()
+
 
 
     def show_start_screen(self):
