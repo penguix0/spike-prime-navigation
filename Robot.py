@@ -177,10 +177,16 @@ class Robot(pg.sprite.Sprite):
 
 		self.moving = True
 		while self.moving == True:
-			min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
-			self.speed = -((sqrt(abs(self.sensor_distance*10)+DISTANCE_TO_STOP)) + min_speed)
+			
+			## Calculate which speed is appropriate based on the sensor distance
+			self.speed = -((sqrt(abs(self.sensor_distance*10)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
+
+			## If an object to is in the way
 			if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
+				## Reverse the speed
 				self.speed = MOTOR_BACKING_SPEED
+
+				## Decide which way to turn
 				if random.randint(1, 2) == 2:
 					self.turn_right(STEERING_PORT, STEERING_SPEED)
 				else:
@@ -189,15 +195,12 @@ class Robot(pg.sprite.Sprite):
 				self.turning = True
 
 			else: 
-				if self.sensor_distance < DISTANCE_TO_STOP*2:
+				## If no object is in the way turn to center
+				if self.sensor_distance < DISTANCE_TO_STOP:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
 
-		self.event_ended = True
-
-	def stand_still(self):
-		self.moving = False
-		
+	def stand_still(self):		
 		## Move the steering wheel back to the center and reset the speed to zero to stop moving
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
@@ -208,7 +211,6 @@ class Robot(pg.sprite.Sprite):
 			self.tracker_moved = False
 	
 	def rest(self):
-		self.moving = False
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
 		if not self.tracker_state:
@@ -218,19 +220,16 @@ class Robot(pg.sprite.Sprite):
 
 	def eat(self):
 		self.eating = True
-		if random.randint(1, 10) == 1:
-			if not self.tracker_state:
-				self.tracker_state = True
-				self.tracker_moved = False
-		if random.randint(1, 1000) == 1:
-			if self.tracker_state:
-				self.tracker_state = False
-				self.tracker_moved = False
 		while self.eating == True:
-			min_speed = random.randint(MIN_MOTOR_SPEED, MIN_MOTOR_SPEED+10)
-			self.speed = -((sqrt(abs(self.sensor_distance)+DISTANCE_TO_STOP)) + min_speed)
+			## Calculate which speed is appropriate based on the sensor distance
+			self.speed = -((sqrt(abs(self.sensor_distance)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
+			
+			## If an object to is in the way
 			if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
+				## Reverse the speed
 				self.speed = MOTOR_BACKING_SPEED
+
+				## Decide which way to turn in
 				if random.randint(1, 2) == 2:
 					self.turn_right(STEERING_PORT, STEERING_SPEED)
 				else:
@@ -239,9 +238,21 @@ class Robot(pg.sprite.Sprite):
 				self.turning = True
 
 			else: 
-				if self.sensor_distance < DISTANCE_TO_STOP*2:
+				## If we avoided that obstacle
+				if self.sensor_distance < DISTANCE_TO_STOP:
 					self.turning = False
+					## Turn the front wheels back to the center
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
+
+			## Move the "nek" randomly
+			if random.randint(1, 10) == 1:
+				if not self.tracker_state:
+					self.tracker_state = True
+					self.tracker_moved = False
+			if random.randint(1, 1000) == 1:
+				if self.tracker_state:
+					self.tracker_state = False
+					self.tracker_moved = False
 
 	def choose_event(self):
 		if self.setup_complete:
@@ -251,6 +262,8 @@ class Robot(pg.sprite.Sprite):
 				## Decide what to do
 				event = random.choice(self.EVENTS_NORMAL)
 				if event == self.EAT:
+					self.moving = False
+
 					self.activity_text = "eten"
 					self.activity = self.activity_text
 					## create a thread. A thread is required because the eating activity requires some on the fly distance calculations
@@ -271,6 +284,7 @@ class Robot(pg.sprite.Sprite):
 				elif event == self.REST:
 					## Stop the eating activity
 					self.eating = False
+					self.moving = False
 
 					## Start the activity
 					self.activity_text = "rusten"
@@ -281,6 +295,7 @@ class Robot(pg.sprite.Sprite):
 				elif event == self.STAND_STILL:
 					## Stop the eating activity
 					self.eating = False
+					self.moving = False
 					
 					## Start the standing still activity
 					self.activity_text = "stil staan"
