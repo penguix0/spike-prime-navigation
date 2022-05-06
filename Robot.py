@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+from xmlrpc.client import FastParser
 from settings import *
 import pygame as pg
 from comm.HubClient import ConnectionState
@@ -69,6 +70,7 @@ class Robot(pg.sprite.Sprite):
 		self.WALK = pg.USEREVENT + 3
 		self.STAND_STILL = pg.USEREVENT + 4
 		self.REST = pg.USEREVENT + 5
+		self.CHOOSE_ACTIVITY = pg.USEREVENT + 6
 		self.EVENTS_NORMAL = [self.EAT, self.WALK, self.STAND_STILL, self.REST]
 		self.EVENTS_SICK = [self.EAT, self.WALK, self.WALK, self.WALK, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.STAND_STILL, self.REST]
 		self.activity = None
@@ -96,18 +98,21 @@ class Robot(pg.sprite.Sprite):
 
 		self.monitor = HubMonitor(self.client)
 
-		print ("Connecting")
 		while not self.client.state == ConnectionState.TELEMETRY:
 			sleep(0.5)
 			print (".", end="")
 		
-		self.setup_complete = True
-
 		self.motor_stop(MOTOR_PORT)
 
 		self.calibrate_steer(STEERING_CALIBRATING_SLOT, 3)
 		
 		self.calibrate_tracker(TRACKER_PORT)
+
+		self.speed = 0
+
+		pg.time.set_timer(self.CHOOSE_ACTIVITY, ACTIVITY_TIME)
+
+		self.setup_complete = True
 
 	## Motors
 
@@ -171,7 +176,6 @@ class Robot(pg.sprite.Sprite):
 			self.tracker_moved = False
 
 		self.moving = True
-		self.eating = False
 		while self.moving == True:
 			min_speed = random.randint(MIN_MOTOR_SPEED-10, MIN_MOTOR_SPEED)
 			self.speed = -((sqrt(abs(self.sensor_distance*10)+DISTANCE_TO_STOP)) + min_speed)
@@ -188,33 +192,28 @@ class Robot(pg.sprite.Sprite):
 				if self.sensor_distance < DISTANCE_TO_STOP*2:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
+
 		self.event_ended = True
 
 	def stand_still(self):
 		self.moving = False
-		self.eating = False
+		
+		## Move the steering wheel back to the center and reset the speed to zero to stop moving
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
-		if random.randint(1, NEK_ACTIVATE_CHANCE_NORMAL) == 1:
-			if not self.tracker_state:
-				self.tracker_state = True
-				self.tracker_moved = False
-		elif random.randint(1, NEK_DURATION_CHANCE_NORMAL) == 1:
-			if self.tracker_state:
-				self.tracker_state = False
-				self.tracker_moved = False
-		self.event_ended = True
 
+		## Move the nek up
+		if self.tracker_state:
+			self.tracker_state = False
+			self.tracker_moved = False
 	
 	def rest(self):
 		self.moving = False
-		self.eating = False
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
 		if not self.tracker_state:
 			self.tracker_state = True
 			self.tracker_moved = False
-		self.event_ended = True
 
 
 	def eat(self):
@@ -243,9 +242,58 @@ class Robot(pg.sprite.Sprite):
 				if self.sensor_distance < DISTANCE_TO_STOP*2:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
-		self.event_ended = True
 
+	def choose_event(self):
+		if self.setup_complete:
+			## If the mode normal is selected start making decisions and excecuting those.
+			if self.app.mode_text == "Normaal":
+				## Do normal stuff
+				## Decide what to do
+				event = random.choice(self.EVENTS_NORMAL)
+				if event == self.EAT:
+					self.activity_text = "eten"
+					self.activity = self.activity_text
+					## create a thread. A thread is required because the eating activity requires some on the fly distance calculations
+					x = threading.Thread(target=self.eat)
+					x.start()
 
+				elif event == self.WALK:
+					## Stop the eating activity
+					self.eating = False
+					
+					## Create a thread whit the walking function
+					self.activity_text = "lopen"
+					self.activity = self.activity_text
+
+					x = threading.Thread(target=self.walk)
+					x.start()
+
+				elif event == self.REST:
+					## Stop the eating activity
+					self.eating = False
+
+					## Start the activity
+					self.activity_text = "rusten"
+					self.activity = self.activity_text
+
+					self.rest()
+
+				elif event == self.STAND_STILL:
+					## Stop the eating activity
+					self.eating = False
+					
+					## Start the standing still activity
+					self.activity_text = "stil staan"
+					self.activity = self.activity_text
+
+					self.stand_still()
+
+			elif self.app.mode_text == "Ziek":
+				## Do ziek stuff
+				## Decide what to do
+				pass	
+			elif self.app.mode_text == "Auto":
+				pass
 
 	def move(self):
 		for port in self.ports:
@@ -255,26 +303,6 @@ class Robot(pg.sprite.Sprite):
 					self.sensor_distance = 100
 				else:
 					self.sensor_distance = data
-
-		if self.setup_complete:
-			if self.app.mode_text == "Normaal" and self.event_ended:
-				## Do normal stuff
-				## Decide what to do
-				event = random.choice(self.EVENTS_NORMAL)
-				self.activity = event
-				pg.time.set_timer(event, ACTIVITY_TIME_NORMAL)
-				self.event_ended = False
-			elif self.app.mode_text == "Ziek" and self.event_ended:
-				## Do ziek stuff
-				## Decide what to do
-				## if decision == "walking":
-				event = random.choice(self.EVENTS_SICK)
-				self.activity = event
-				pg.time.set_timer(event, ACTIVITY_TIME_SICK)
-				self.event_ended = False
-				
-			elif self.app.mode_text == "Auto":
-				pass
 
 		self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
 

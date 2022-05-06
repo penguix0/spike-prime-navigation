@@ -155,23 +155,9 @@ class App:
                 if event.key == pg.K_0 and self.robot.tracker_calibrated and self.mode_text == self.modes["3"][0]:
                     self.robot.tracker_state = True
                     self.robot.tracker_moved = False
-
-            if event.type == self.robot.EAT:
-                self.robot.activity_text = "eten"
-                x = threading.Thread(target=self.robot.eat)
-                x.start()
-            if event.type == self.robot.STAND_STILL:
-                self.robot.activity_text = "stil staan"
-                self.robot.stand_still()
-            if event.type == self.robot.REST:
-                self.robot.activity_text = "rusten"
-                self.robot.rest()
-            if event.type == self.robot.WALK:
-                self.robot.activity_text = "lopen"
-                x = threading.Thread(target=self.robot.walk)
-                x.start()
-
-
+                
+            if event.type == self.robot.CHOOSE_ACTIVITY:
+                self.robot.choose_event()
 
     def show_start_screen(self):
         pass
