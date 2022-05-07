@@ -1,3 +1,4 @@
+from sqlite3 import connect
 from settings import *
 import pygame as pg
 import sys
@@ -55,6 +56,7 @@ class App:
             self.draw()
 
     def quit(self):
+        self.robot.client.connection.close()
         pg.quit()
         sys.exit()
     
@@ -97,6 +99,10 @@ class App:
             elif self.robot.tracker_state == False:
                 nek = self.font.render('Nek: omhoog', True, GRAY)
             self.screen.blit(nek, (20, 100))
+        elif self.fonts_initiated:
+            connecting = self.font.render('Connecting...', True, GRAY)
+            self.screen.blit(connecting, (INITIAL_CAMERA_POS_X-(connecting.get_width()/2), INITIAL_CAMERA_POS_Y))
+
 
     def draw(self):
         self.screen.fill(BGCOLOR)

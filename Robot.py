@@ -32,7 +32,7 @@ class Robot(pg.sprite.Sprite):
 
 		self.camera = self.app.camera
 
-		self.speed = ROBOT_SPEED
+		self.speed = 0
 		
 		## ---===== Rotation =====----
 		self.rotation = 0
@@ -79,10 +79,9 @@ class Robot(pg.sprite.Sprite):
 		self.event_ended = True
 
 		## ---===== Tracking =====----
-		self.tracker_down = None
+		self.tracker_down = False
+		self.tracker_up = False
 		self.tracker_state = "Gebruik de nummers 9 & 0 om de 'nek' te bedienen in auto modus"
-		self.tracker_moved = True
-		self.tracker_calibrated = False
 
 		self.setup_complete = False
 		setup_function = threading.Thread(target=self.setup_robot)
@@ -152,10 +151,8 @@ class Robot(pg.sprite.Sprite):
 		self.middle = self.get_motor_angle(STEERING_PORT_NUMERIC)
 	
 	def calibrate_tracker(self, port):		
-		self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'clockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
+		self.set_motor_absolute_angle(port, TRACKER_SPEED, 'clockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
 		
-		self.tracker_calibrated = True
-
 	## Turning
 
 	def turn_left(self, port, speed):
@@ -169,144 +166,172 @@ class Robot(pg.sprite.Sprite):
 
 	## Moving
 
+	def move_tracker_up(self):
+		if not self.tracker_up:
+			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'counterclockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
+			self.tracker_up = True
+			self.tracker_down = False
+
+	def move_tracker_down(self):
+		if not self.tracker_down:
+			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'clockwise', TRACKER_DOWN_ANGLE, TRACKER_STALL)
+			self.tracker_up = False
+			self.tracker_down = True
+
 	def walk(self):
 		## Move the nek up
-		if self.tracker_state:
-			self.tracker_state = False
-			self.tracker_moved = False
+		self.move_tracker_up()
 
+		self.turning = False
 		self.moving = True
 		while self.moving == True:
-			
-			## Calculate which speed is appropriate based on the sensor distance
-			self.speed = -((sqrt(abs(self.sensor_distance*10)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
+			current_speed = self.speed
+
 
 			## If an object to is in the way
 			if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
 				## Reverse the speed
 				self.speed = MOTOR_BACKING_SPEED
-
-				## Decide which way to turn
-				if random.randint(1, 2) == 2:
-					self.turn_right(STEERING_PORT, STEERING_SPEED)
-				else:
-					self.turn_left(STEERING_PORT, STEERING_SPEED)
-
+				self.turn_left(STEERING_PORT, STEERING_SPEED)
 				self.turning = True
+			elif self.sensor_distance > DISTANCE_TO_STOP*2:
+				## Calculate which speed is appropriate based on the sensor distance
+				self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
+				self.turning = False
 
-			else: 
-				## If no object is in the way turn to center
-				if self.sensor_distance < DISTANCE_TO_STOP:
-					self.turning = False
-					self.turn_center(STEERING_PORT, STEERING_SPEED)
+			# ## If an object to is in the way
+			# if self.sensor_distance < DISTANCE_TO_STOP:
+			# 	## Reverse the speed
+			# 	self.speed = MOTOR_BACKING_SPEED
+
+				# ## Decide which way to turn
+				# if random.randint(1, 2) == 2:
+				# 	self.turn_right(STEERING_PORT, STEERING_SPEED)
+				# else:
+				# 	self.turn_left(STEERING_PORT, STEERING_SPEED)
+
+				# self.turning = True
+			## Prevents the script from sending to many messages to the hub
+			if not round(current_speed, 0) == round(self.speed, 0):
+				self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+
+			# else: 
+			# 	## If no object is in the way turn to center
+			# 	if self.sensor_distance < DISTANCE_TO_STOP and self.turning:
+			# 		self.turning = False
+			# 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 
 	def stand_still(self):		
 		## Move the steering wheel back to the center and reset the speed to zero to stop moving
+		self.motor_stop(MOTOR_PORT)
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
 
-		## Move the nek up
-		if self.tracker_state:
-			self.tracker_state = False
-			self.tracker_moved = False
+		self.move_tracker_up()
 	
 	def rest(self):
+		self.motor_stop(MOTOR_PORT)
 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 		self.speed = 0
-		if not self.tracker_state:
-			self.tracker_state = True
-			self.tracker_moved = False
+		
+		self.move_tracker_down()
 
 
 	def eat(self):
+
 		self.eating = True
+		self.turning = False
+		self.move_tracker_down()
 		while self.eating == True:
-			## Calculate which speed is appropriate based on the sensor distance
-			self.speed = -((sqrt(abs(self.sensor_distance)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
-			
+			current_speed = self.speed
+
 			## If an object to is in the way
 			if self.sensor_distance < DISTANCE_TO_STOP and not self.turning:
 				## Reverse the speed
 				self.speed = MOTOR_BACKING_SPEED
-
-				## Decide which way to turn in
-				if random.randint(1, 2) == 2:
-					self.turn_right(STEERING_PORT, STEERING_SPEED)
-				else:
-					self.turn_left(STEERING_PORT, STEERING_SPEED)
-
+				self.turn_right(STEERING_PORT, STEERING_SPEED)
 				self.turning = True
+			elif self.sensor_distance > DISTANCE_TO_STOP*2:
+				## Calculate which speed is appropriate based on the sensor distance
+				self.speed = -((sqrt(abs(self.sensor_distance)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
+				self.turning = False
+			
+			# ## If an object to is in the way
+			# if self.sensor_distance < DISTANCE_TO_STOP:
+			# 	## Reverse the speed
+			# 	self.speed = MOTOR_BACKING_SPEED
 
-			else: 
-				## If we avoided that obstacle
-				if self.sensor_distance < DISTANCE_TO_STOP:
-					self.turning = False
-					## Turn the front wheels back to the center
-					self.turn_center(STEERING_PORT, STEERING_SPEED)
+				# ## Decide which way to turn in
+				# if random.randint(1, 2) == 2:
+				# 	self.turn_right(STEERING_PORT, STEERING_SPEED)
+				# else:
+				# 	self.turn_left(STEERING_PORT, STEERING_SPEED)
 
-			## Move the "nek" randomly
-			if random.randint(1, 10) == 1:
-				if not self.tracker_state:
-					self.tracker_state = True
-					self.tracker_moved = False
-			if random.randint(1, 1000) == 1:
-				if self.tracker_state:
-					self.tracker_state = False
-					self.tracker_moved = False
+				# self.turning = True
+			
+			## Prevents the script from sending to many messages to the hub
+			if not round(current_speed, 0) == round(self.speed, 0):
+				self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
+
+			# else: 
+			# 	## If we avoided that obstacle
+			# 	if self.sensor_distance < DISTANCE_TO_STOP and self.turning:
+			# 		self.turning = False
+			# 		## Turn the front wheels back to the center
+			# 		self.turn_center(STEERING_PORT, STEERING_SPEED)
 
 	def choose_event(self):
 		if self.setup_complete:
 			## If the mode normal is selected start making decisions and excecuting those.
+			## Decide what to do
+			event = None
 			if self.app.mode_text == "Normaal":
-				## Do normal stuff
-				## Decide what to do
 				event = random.choice(self.EVENTS_NORMAL)
-				if event == self.EAT:
-					self.moving = False
-
-					self.activity_text = "eten"
-					self.activity = self.activity_text
-					## create a thread. A thread is required because the eating activity requires some on the fly distance calculations
-					x = threading.Thread(target=self.eat)
-					x.start()
-
-				elif event == self.WALK:
-					## Stop the eating activity
-					self.eating = False
-					
-					## Create a thread whit the walking function
-					self.activity_text = "lopen"
-					self.activity = self.activity_text
-
-					x = threading.Thread(target=self.walk)
-					x.start()
-
-				elif event == self.REST:
-					## Stop the eating activity
-					self.eating = False
-					self.moving = False
-
-					## Start the activity
-					self.activity_text = "rusten"
-					self.activity = self.activity_text
-
-					self.rest()
-
-				elif event == self.STAND_STILL:
-					## Stop the eating activity
-					self.eating = False
-					self.moving = False
-					
-					## Start the standing still activity
-					self.activity_text = "stil staan"
-					self.activity = self.activity_text
-
-					self.stand_still()
-
 			elif self.app.mode_text == "Ziek":
-				## Do ziek stuff
-				## Decide what to do
-				pass	
+				event = random.choice(self.EVENTS_SICK)
+			
+			if event == self.EAT:
+				self.moving = False
+
+				self.activity_text = "eten"
+				self.activity = self.activity_text
+				## create a thread. A thread is required because the eating activity requires some on the fly distance calculations
+				x = threading.Thread(target=self.eat)
+				x.start()
+
+			elif event == self.WALK:
+				## Stop the eating activity
+				self.eating = False
+				
+				## Create a thread whit the walking function
+				self.activity_text = "lopen"
+				self.activity = self.activity_text
+
+				x = threading.Thread(target=self.walk)
+				x.start()
+
+			elif event == self.REST:
+				## Stop the eating activity
+				self.eating = False
+				self.moving = False
+
+				## Start the activity
+				self.activity_text = "rusten"
+				self.activity = self.activity_text
+
+				self.rest()
+
+			elif event == self.STAND_STILL:
+				## Stop the eating activity
+				self.eating = False
+				self.moving = False
+				
+				## Start the standing still activity
+				self.activity_text = "stil staan"
+				self.activity = self.activity_text
+
+				self.stand_still()
+
 			elif self.app.mode_text == "Auto":
 				pass
 
@@ -319,23 +344,12 @@ class Robot(pg.sprite.Sprite):
 				else:
 					self.sensor_distance = data
 
-		self.motor_start(MOTOR_PORT, self.speed, MOTOR_MAX_POWER, MOTOR_ACCELERATION, MOTOR_DECELERATION, True)
-
-
 		## Calculate the new position based on the speed
 		self.pos = calculate_new_xy(self.pos, -round(self.speed, 1)*0.03, -self.rotation+ROBOT_ROTATION_OFFSET)
 		
 		## Rotate/move the robot on the screen
 		self.rect.centerx = self.pos.x + self.camera.get_position()[0]
 		self.rect.centery = self.pos.y + self.camera.get_position()[1]
-
-		## Rotate the trac ker
-		if self.tracker_state == True and self.tracker_moved == False:
-			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'clockwise', TRACKER_DOWN_ANGLE, TRACKER_STALL)
-			self.tracker_moved = True
-		elif self.tracker_state == False and self.tracker_moved == False:	
-			self.set_motor_absolute_angle(TRACKER_PORT, TRACKER_SPEED, 'counterclockwise', TRACKER_UP_ANGLE, TRACKER_STALL)
-			self.tracker_moved = True
 
 	def update_rotation(self):
 		self.rotation = (self.get_orientation()[0])
@@ -364,6 +378,8 @@ class Robot(pg.sprite.Sprite):
 				self.update_ports()
 				self.scan_points()
 				self.update_rotation()
+			else:
+				self.app.quit()
 
 	def scan_points(self):
 		for port in self.ports:
