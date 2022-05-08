@@ -256,7 +256,7 @@ class Robot(pg.sprite.Sprite):
 				self.turning = True
 			elif self.sensor_distance > DISTANCE_TO_STOP*2:
 				## Calculate which speed is appropriate based on the sensor distance
-				self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED) - 10
+				self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED) - 5
 				if self.turning:
 					self.turning = False
 					self.turn_center(STEERING_PORT, STEERING_SPEED)
