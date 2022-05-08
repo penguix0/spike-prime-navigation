@@ -121,7 +121,7 @@ class Robot(pg.sprite.Sprite):
 			self.ports[i]["data"] = self.monitor.status.port_device_data(i)
 
 	def motor_start(self, port, speed, max_power, acceleration, deceleration, stall):
-		self.client.send_message('scratch.motor_start', {'port': port, 'speed': speed, 'max_power': max_power, 'acceleration': acceleration, 'deceleration': deceleration, 'stall': stall})
+		self.client.send_message_without_response('scratch.motor_start', {'port': port, 'speed': speed, 'max_power': max_power, 'acceleration': acceleration, 'deceleration': deceleration, 'stall': stall})
 	
 	def motor_stop(self, port):
 		self.client.send_message_without_response('scratch.motor_stop', {'port': port, 'stop':0})
@@ -139,7 +139,7 @@ class Robot(pg.sprite.Sprite):
 		self.client.send_message_without_response('scratch.motor_go_direction_to_position', { 'port': port, 'speed': speed, 'position': position,  'direction': direction, 'stall': stall, 'stop': True})
 	
 	def motor_run_for_degrees(self, port, speed, stall, stop, degrees):
-		self.client.send_message('scratch.motor_run_for_degrees', { 'port': port, 'speed': speed, 'stall': stall, 'stop': stop,'degrees': degrees})
+		self.client.send_message_without_response('scratch.motor_run_for_degrees', { 'port': port, 'speed': speed, 'stall': stall, 'stop': stop,'degrees': degrees})
 
 	## Calibrating
 
