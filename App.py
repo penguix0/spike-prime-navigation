@@ -100,7 +100,12 @@ class App:
                 nek = self.font.render('Nek: omhoog', True, GRAY)
             self.screen.blit(nek, (20, 100))
         elif self.fonts_initiated:
-            connecting = self.font.render('Connecting...', True, GRAY)
+            text = "Starting"
+            if not self.robot.setup_complete:
+                text = 'Preparing robot...'
+            else:
+                text = "Connecting..."
+            connecting = self.font.render(text, True, GRAY)
             self.screen.blit(connecting, (INITIAL_CAMERA_POS_X-(connecting.get_width()/2), INITIAL_CAMERA_POS_Y))
 
 

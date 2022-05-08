@@ -17,7 +17,7 @@
 # Configuration for serial on specified port
 connection: serial
 serial:
- device: '/dev/cu.usbmodemFA1311'
+ device: '/dev/cu.usbmodemFD1211'
 
 # Configuration for bluetooth
 # Set the BlueTooth address and port of the RFCOMM function.

@@ -124,7 +124,7 @@ class Robot(pg.sprite.Sprite):
 		self.client.send_message('scratch.motor_start', {'port': port, 'speed': speed, 'max_power': max_power, 'acceleration': acceleration, 'deceleration': deceleration, 'stall': stall})
 	
 	def motor_stop(self, port):
-		self.client.send_message('scratch.motor_stop', {'port': port, 'stop':0})
+		self.client.send_message_without_response('scratch.motor_stop', {'port': port, 'stop':0})
 	
 	def get_motor_angle(self, port):
 		return self.monitor._status.port_raw(port)[1][2]
@@ -197,7 +197,10 @@ class Robot(pg.sprite.Sprite):
 			elif self.sensor_distance > DISTANCE_TO_STOP*2:
 				## Calculate which speed is appropriate based on the sensor distance
 				self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
-				self.turning = False
+
+				if self.turning:
+					self.turning = False
+					self.turn_center(STEERING_PORT, STEERING_SPEED)
 
 			# ## If an object to is in the way
 			# if self.sensor_distance < DISTANCE_TO_STOP:
@@ -253,8 +256,10 @@ class Robot(pg.sprite.Sprite):
 				self.turning = True
 			elif self.sensor_distance > DISTANCE_TO_STOP*2:
 				## Calculate which speed is appropriate based on the sensor distance
-				self.speed = -((sqrt(abs(self.sensor_distance)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED)
-				self.turning = False
+				self.speed = -((sqrt(abs(self.sensor_distance*100)+DISTANCE_TO_STOP)) + MIN_MOTOR_SPEED) - 10
+				if self.turning:
+					self.turning = False
+					self.turn_center(STEERING_PORT, STEERING_SPEED)
 			
 			# ## If an object to is in the way
 			# if self.sensor_distance < DISTANCE_TO_STOP:
