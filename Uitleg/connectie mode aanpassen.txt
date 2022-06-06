@@ -1,0 +1,15 @@
+--== Dutch ==--
+
+Als je met een usb kabel wil verbinden kan dat ook.
+In de App folder staat een lego_hub.yaml bestand.
+Dit bestand kan je aanpassen met notepad om van bluetooth modus naar serial (kabel) modus the switchen.
+Het documentje spreekt redelijk voor zich.
+
+
+--== English ==--
+
+If you want to connect to the hub with a usb to micro usb cable, rather than with bluetooth you're in luck because it's supported!
+In the App folder (which also contains the executable) you'll find a lego_hub.yaml file.
+You can modify this file by using notepad on win10 or you're preferred IDE of choice.
+In this file you can change the connection mode to serial or to bluetooth.
+The file is pretty much self explanatory.

@@ -1,0 +1,29 @@
+--== Dutch ==--
+
+Zet de hub aan door de grote knop ingedrukt te houden, totdat er een teken is van leven.
+Ga naar de bluetooth instellingen van het apparaat. (in win10 werkt configuratiescherm het best. )
+
+(Als de hub al ooit gekoppeld was, maar niet wil verbinden kan je hem proberen te verwijderen en op nieuw te verbinden)
+
+Pruk op de bluetooth knop op de hub, er zou nu een piep geluid uit moeten komen.
+Voeg een bluetooth device toe
+Klik op de hub (de naam is meestal iets zoals "lego hub")
+Wacht tot hij verbonden is en start het programma.
+
+--== English ==--
+
+Start the hub by pressing the big button on the up side of the hub. Hold the button until it gives a sign of life.
+Go to the bluetooth settings of your device. (in win10 configurationpanel works best. )
+
+(If the hub was ever connected before and refuses to connect, try deleting the device and pairing again)
+Now press the bluetooth button, the hub should start beeping.
+Add the bluetooth device
+Press on the hub (usually it has a name like "lego hub")
+Wait until connected and start the program.
+
+
+
+
+
+
+

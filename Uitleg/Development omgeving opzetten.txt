@@ -1,0 +1,17 @@
+--== Dutch ==--
+
+Hier zijn een paar handige links om aan de slag te gaan met de broncode, deze is tevens ook op github te vinden: https://github.com/penguix0/spike-prime-navigation
+
+https://programmeerplaats.nl/python-installeren/
+
+Dit zijn de requirements om het programma te draaien: https://github.com/smr99/lego-hub-tk/blob/main/requirements.txt
+Installeer deze met: pip3 install -r requirements.txt
+
+--== English ==--
+
+Here are some usefull links which will help you get started playing with the source code, the source code is also available on github: https://github.com/penguix0/spike-prime-navigation
+
+https://phoenixnap.com/kb/how-to-install-python-3-windows
+
+These are the requirments to run the program: https://github.com/smr99/lego-hub-tk/blob/main/requirements.txt
+Install these with: pip3 install -r requirements.txt
