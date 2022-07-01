@@ -11,8 +11,9 @@ To use A.T.O.M. yourself you need a few things:
     - Windows 7 or later
 - A [Lego Mindstorms 51515](https://www.lego.com/en-us/product/robot-inventor-51515) set
 - Something which functions the same as our lego build:
+![Our robot](./pictures/robot_1.png "The robot used with A.T.O.M.")
 <div style="width:200px ; height:200px ; position:right">
-![Our robot](./pictures/robot_1.png?raw=true "The robot used with A.T.O.M.")
+![Our robot](./pictures/robot_1.png "The robot used with A.T.O.M.")
 </div>
 
 ## Changing the Bluetooth MAC address of the Lego Spike Prime Hub
