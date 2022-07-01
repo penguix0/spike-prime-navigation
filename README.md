@@ -37,13 +37,21 @@ gh repo clone penguix0/spike-prime-navigation
 
 <details>
 <summary>Browser</summary>
+
+To install spike-prime-navigation through you're browser you need to do the following:
+1. Head over to the [repository](https://github.com/penguix0/spike-prime-navigation)
+2. Click on releases ![releases page picture](./pictures/releases.png)
+3. Download the latest release
+
 </details>
 
-<details>
-<summary>VSCode</summary>
-</details>
+### 3. Executing!
 
-## ⚙️ Changing the Bluetooth MAC address of the Lego Spike Prime Hub
+Unzip your downloaded release and click on the .exe file to start the app.
+
+## Useful stuff
+
+### ⚙️ Changing the Bluetooth MAC address of the Lego Spike Prime Hub
 
 If you want to use this program with your own Lego Spike Prime Hub, you're in luck, because you can! The only thing you have to do is change the MAC address in the config file. Navigate to <code>/App/lego_hub.yaml</code> and open it with a text editor such as NotePad. Next scroll down until you see this piece of text:
 
@@ -54,3 +62,20 @@ If you want to use this program with your own Lego Spike Prime Hub, you're in lu
 </p>
 
 The MAC address seen in the picture is the one for my Lego Spike Prime HUB, you're MAC address is different from mine, however. To get the MAC address of you're Lego Spike Prime Hub you first need to [pair](https://education.lego.com/en-us/product-resources/spike-prime/troubleshooting/bluetooth-connectivity) it with your system. Now you can get the MAC address of you are hub and replace the current MAC address with your own.
+
+### Building from source
+
+This guide assumes that you have already installed python3 as well as the necessary dependencies.
+
+First install pyinstaller:
+
+```sh
+pip install pyinstaller
+```
+
+Next navigate to the directory containing <code>App.py</code> and execute the following command:
+
+```sh
+pyinstaller App.py -i icon.ico
+```
+
