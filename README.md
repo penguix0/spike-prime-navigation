@@ -13,7 +13,7 @@ To use A.T.O.M. yourself you need a few things:
 - Something which functions the same as our lego build:
 <div style="width:200px ; height:200px ; position:right">
 ![Our robot](./pictures/robot_1.png?raw=true "The robot used with A.T.O.M.")
-<div>
+</div>
 
 ## Changing the Bluetooth MAC address of the Lego Spike Prime Hub
 
