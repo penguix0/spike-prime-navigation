@@ -45,11 +45,15 @@ To install spike-prime-navigation through you're browser you need to do the foll
 
 </details>
 
-### 3. Executing!
+### 3. Execute the program!
 
 Unzip your downloaded release and click on the .exe file to start the app.
 
 ## Useful stuff
+
+### Connecting to the hub
+
+Here is a [YouTube video](https://www.youtube.com/watch?v=MEj1_pS3esw) that shows how to connect to the Spike Prime Hub.
 
 ### ⚙️ Changing the Bluetooth MAC address of the Lego Spike Prime Hub
 
@@ -63,17 +67,24 @@ If you want to use this program with your own Lego Spike Prime Hub, you're in lu
 
 The MAC address seen in the picture is the one for my Lego Spike Prime HUB, you're MAC address is different from mine, however. To get the MAC address of you're Lego Spike Prime Hub you first need to [pair](https://education.lego.com/en-us/product-resources/spike-prime/troubleshooting/bluetooth-connectivity) it with your system. Now you can get the MAC address of you are hub and replace the current MAC address with your own.
 
-### Building from source
+### 🧱 Building from source
 
-This guide assumes that you have already installed python3 as well as the necessary dependencies.
+This guide assumes that you have already [installed](
+https://phoenixnap.com/kb/how-to-install-python-3-windows) python3.
 
-First install pyinstaller:
+Before we start we need to install the dependencies. Navigate to <code>source</code> and execute the following command to install all the necessary dependencies:
+
+```sh
+pip3 install -r requirements.txt
+```
+
+First, install [pyinstaller](https://pypi.org/project/pyinstaller/):
 
 ```sh
 pip install pyinstaller
 ```
 
-Next navigate to the directory containing <code>App.py</code> and execute the following command:
+Next, navigate to the directory containing <code>App.py</code> and execute the following command:
 
 ```sh
 pyinstaller App.py -i icon.ico
