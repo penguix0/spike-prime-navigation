@@ -13,7 +13,7 @@ To use A.T.O.M. yourself you need a few things:
 - Something which functions the same as our lego build which is based on the M.V.P.:
 <p align="right">
     <a href="https://www.lego.com/cdn/product-assets/product.bi.additional.main.pdf/51515_MVP.pdf">
-        <img src="https://github.com/penguix0/spike-prime-navigation/blob/main/pictures/robot_1.png?raw=true" alt="Picture of the robot used with A.T.O.M.">
+        <img src="https://github.com/penguix0/spike-prime-navigation/blob/main/pictures/robot_1.png?raw=true" alt="Picture of the robot used with A.T.O.M." width="423" height="382">
     </a>
 </p>
 
