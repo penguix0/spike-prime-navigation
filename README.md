@@ -4,7 +4,16 @@ A.T.O.M. is our Automatic Tracklab Originate Module. With A.T.O.M. you can simul
 The program on the PC is responsible for measuring the distance the robot has driven with an accuracy of 0.2 meters. Our client wanted this feature to compare it to their Tracklab software.
 
 ## Requirements
-
+To use A.T.O.M. yourself you need a few things:
+- A PC supporting Bluetooth 5.0 with:
+    - Linux
+    - Mac OS (Big Sur or later recommended)
+    - Windows 7 or later
+- A [Lego Mindstorms 51515](https://www.lego.com/en-us/product/robot-inventor-51515) set
+- Something which functions the same as our lego build:
+<div style="width:200px ; height:200px ; position:right">
+![Our robot](./pictures/robot_1.png?raw=true "The robot used with A.T.O.M.")
+<div>
 
 ## Changing the Bluetooth MAC address of the Lego Spike Prime Hub
 
