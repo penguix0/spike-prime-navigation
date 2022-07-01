@@ -1,12 +1,10 @@
 #! /usr/bin/python3
-from xmlrpc.client import FastParser
 from settings import *
 import pygame as pg
 from comm.HubClient import ConnectionState
 from time import sleep
 from math import sqrt
 import threading
-import random
 
 def calculate_new_xy(old_xy, speed, angle_in_degrees):
     move_vec = pg.math.Vector2()
